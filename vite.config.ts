@@ -8,11 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // Don't auto-inject, we handle it manually
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/jyvkjhzeosextzqjkoav\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-cache',

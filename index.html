@@ -37,7 +37,8 @@
     
     <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
+      // Only register service worker in production environments, not in StackBlitz/Bolt
+      if ('serviceWorker' in navigator && window.location.hostname !== 'localhost' && !window.location.hostname.includes('stackblitz') && !window.location.hostname.includes('bolt.new')) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
