@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Zap, 
-  Target, 
-  Users, 
+import {
+  Zap,
+  Target,
+  Users,
   Crown,
   Calendar,
   TrendingUp,
@@ -17,6 +17,7 @@ import RankBadge from '../components/RankBadge';
 import ProgressBar from '../components/ProgressBar';
 import SystemNotification from '../components/SystemNotification';
 import NotificationSetup from '../components/NotificationSetup';
+import TrainingModal from '../components/TrainingModal';
 import { useNotifications } from '../hooks/useNotifications';
 
 interface DashboardProps {
@@ -32,6 +33,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser }) => {
     message: string;
     type: 'success' | 'warning' | 'achievement';
   }>({ show: false, message: '', type: 'success' });
+  const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
 
   useEffect(() => {
     setDailyQuests(generateDailyQuests());
@@ -213,21 +215,39 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser }) => {
                         </div>
                       </div>
                       
-                      <motion.button
-                        whileHover={{ scale: quest.completed ? 1 : 1.05 }}
-                        whileTap={{ scale: quest.completed ? 1 : 0.95 }}
-                        onClick={() => !quest.completed && completeQuest(quest.id)}
-                        disabled={quest.completed}
-                        className={`
-                          px-4 py-2 rounded-lg font-medium transition-all duration-300
-                          ${quest.completed
-                            ? 'bg-green-500 text-white cursor-default font-orbitron'
-                            : 'bg-electric-blue hover:bg-electric-blue-dark text-white font-orbitron'
-                          }
-                        `}
-                      >
-                        {quest.completed ? 'Complete' : 'Mark Done'}
-                      </motion.button>
+                      {quest.category === 'body' ? (
+                        <motion.button
+                          whileHover={{ scale: quest.completed ? 1 : 1.05 }}
+                          whileTap={{ scale: quest.completed ? 1 : 0.95 }}
+                          onClick={() => !quest.completed && setIsTrainingModalOpen(true)}
+                          disabled={quest.completed}
+                          className={`
+                            px-4 py-2 rounded-lg font-medium transition-all duration-300
+                            ${quest.completed
+                              ? 'bg-green-500 text-white cursor-default font-orbitron'
+                              : 'bg-electric-blue hover:bg-electric-blue-dark text-white font-orbitron'
+                            }
+                          `}
+                        >
+                          {quest.completed ? 'Complete' : 'Start Training'}
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: quest.completed ? 1 : 1.05 }}
+                          whileTap={{ scale: quest.completed ? 1 : 0.95 }}
+                          onClick={() => !quest.completed && completeQuest(quest.id)}
+                          disabled={quest.completed}
+                          className={`
+                            px-4 py-2 rounded-lg font-medium transition-all duration-300
+                            ${quest.completed
+                              ? 'bg-green-500 text-white cursor-default font-orbitron'
+                              : 'bg-electric-blue hover:bg-electric-blue-dark text-white font-orbitron'
+                            }
+                          `}
+                        >
+                          {quest.completed ? 'Complete' : 'Mark Done'}
+                        </motion.button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -271,6 +291,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser }) => {
           </div>
         </div>
       </div>
+
+      <TrainingModal
+        isOpen={isTrainingModalOpen}
+        onClose={() => setIsTrainingModalOpen(false)}
+        userRank={user.rank}
+        onSessionComplete={() => {
+          const bodyQuest = dailyQuests.find(q => q.category === 'body');
+          if (bodyQuest) {
+            completeQuest(bodyQuest.id);
+          }
+        }}
+      />
     </div>
   );
 };
