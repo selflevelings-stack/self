@@ -296,10 +296,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser }) => {
         isOpen={isTrainingModalOpen}
         onClose={() => setIsTrainingModalOpen(false)}
         userRank={user.rank}
-        onSessionComplete={() => {
+        requiredReps={15}
+        onSessionComplete={(xpEarned, repsCompleted) => {
           const bodyQuest = dailyQuests.find(q => q.category === 'body');
           if (bodyQuest) {
-            completeQuest(bodyQuest.id);
+            completeQuest(bodyQuest.id, xpEarned);
           }
         }}
       />
