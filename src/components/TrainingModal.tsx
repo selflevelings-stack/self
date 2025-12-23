@@ -75,6 +75,7 @@ export default function TrainingModal({
   const [reps, setReps] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [formFeedback, setFormFeedback] = useState('');
+  const [isAutoCompleting, setIsAutoCompleting] = useState(false);
 
   const multiplier = RANK_MULTIPLIERS[userRank] || 1.0;
 
@@ -85,17 +86,12 @@ export default function TrainingModal({
     setSessionStartTime(Date.now());
   };
 
-  const handleEndSession = async () => {
-    if (!user || !sessionStartTime || reps < requiredReps) {
-      if (reps < requiredReps) {
-        toast.error(`You need at least ${requiredReps} reps to complete this mission! (${reps}/${requiredReps})`);
-      }
-      return;
-    }
+  const completeSession = async (completedReps: number) => {
+    if (!user || !sessionStartTime) return;
 
     try {
       const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
-      const baseXP = Math.floor(reps * (EXERCISE_XP[selectedExercise!] || 1));
+      const baseXP = Math.floor(completedReps * (EXERCISE_XP[selectedExercise!] || 1));
       const xpEarned = Math.floor(baseXP * multiplier);
 
       const { data: userData, error: userError } = await supabase
@@ -122,7 +118,7 @@ export default function TrainingModal({
       await supabase.from('exercise_sessions').insert({
         user_id: user.id,
         exercise_type: selectedExercise,
-        reps_completed: reps,
+        reps_completed: completedReps,
         xp_earned: xpEarned,
         session_duration: sessionDuration
       });
@@ -137,6 +133,61 @@ export default function TrainingModal({
         })
         .eq('id', user.id);
 
+      const today_date = new Date().toISOString().split('T')[0];
+      const { data: bodyQuest } = await supabase
+        .from('quests')
+        .select('id, completed')
+        .eq('user_id', user.id)
+        .eq('category', 'body')
+        .eq('quest_date', today_date)
+        .maybeSingle();
+
+      if (bodyQuest && !bodyQuest.completed) {
+        await supabase
+          .from('quests')
+          .update({ completed: true, completed_at: new Date().toISOString() })
+          .eq('id', bodyQuest.id);
+      }
+
+      return xpEarned;
+    } catch (error) {
+      console.error('Error completing session:', error);
+      throw error;
+    }
+  };
+
+  const handleAutoComplete = async () => {
+    if (isAutoCompleting) return;
+    setIsAutoCompleting(true);
+
+    try {
+      const xpEarned = await completeSession(reps);
+      toast.success(`Mission Complete! +${xpEarned} XP earned!`);
+      setIsTraining(false);
+      setSelectedExercise(null);
+      setReps(0);
+      setSessionStartTime(null);
+      onSessionComplete(xpEarned, reps);
+      setTimeout(() => {
+        onClose();
+      }, 500);
+    } catch (error) {
+      console.error('Auto-completion failed:', error);
+      toast.error('Failed to complete mission');
+      setIsAutoCompleting(false);
+    }
+  };
+
+  const handleEndSession = async () => {
+    if (!user || !sessionStartTime || reps < requiredReps) {
+      if (reps < requiredReps) {
+        toast.error(`You need at least ${requiredReps} reps to complete this mission! (${reps}/${requiredReps})`);
+      }
+      return;
+    }
+
+    try {
+      const xpEarned = await completeSession(reps);
       toast.success(`+${xpEarned} XP earned! ${reps} reps completed!`);
       setIsTraining(false);
       setSelectedExercise(null);
@@ -199,6 +250,8 @@ export default function TrainingModal({
                     onRepsUpdate={setReps}
                     onFormUpdate={setFormFeedback}
                     onClose={handleCameraClose}
+                    requiredReps={requiredReps}
+                    onComplete={handleAutoComplete}
                   />
                 </div>
               </>

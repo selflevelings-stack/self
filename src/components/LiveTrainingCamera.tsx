@@ -201,6 +201,15 @@ export default function LiveTrainingCamera({
           const newReps = detectorRef.current.getReps();
           setReps(newReps);
           onRepsUpdate(newReps);
+
+          if (newReps >= requiredReps && !completionTriggeredRef.current && onComplete) {
+            completionTriggeredRef.current = true;
+            setIsComplete(true);
+            setFeedback('Mission Complete!');
+            setTimeout(() => {
+              onComplete();
+            }, 1500);
+          }
         }
 
         const formFeedback = (detectorRef.current as any).getFormFeedback?.() || 'Tracking...';
@@ -308,18 +317,24 @@ export default function LiveTrainingCamera({
         <div className="flex flex-col gap-4">
           <motion.div
             initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
+            animate={{ scale: isComplete ? 1.1 : 1 }}
             className="text-center"
           >
             <motion.div
               key={reps}
               initial={{ scale: 1.3, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-6xl font-orbitron font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-green-400 to-cyan-400"
+              animate={{ scale: isComplete ? 1.2 : 1, opacity: 1 }}
+              className={`text-6xl font-orbitron font-bold text-transparent bg-clip-text ${
+                isComplete
+                  ? 'bg-gradient-to-r from-green-400 via-emerald-400 to-green-400'
+                  : 'bg-gradient-to-r from-cyan-400 via-green-400 to-cyan-400'
+              }`}
             >
               {reps}
             </motion.div>
-            <p className="text-cyan-300 text-sm mt-2">Reps</p>
+            <p className={`text-sm mt-2 ${isComplete ? 'text-green-400 font-bold' : 'text-cyan-300'}`}>
+              {isComplete ? 'Complete!' : 'Reps'}
+            </p>
           </motion.div>
 
           <motion.div
