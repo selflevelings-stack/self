@@ -14,6 +14,8 @@ interface LiveTrainingCameraProps {
   onRepsUpdate: (reps: number) => void;
   onFormUpdate: (feedback: string) => void;
   onClose: () => void;
+  requiredReps: number;
+  onComplete?: () => void;
 }
 
 declare global {
@@ -27,7 +29,9 @@ export default function LiveTrainingCamera({
   exerciseType,
   onRepsUpdate,
   onFormUpdate,
-  onClose
+  onClose,
+  requiredReps,
+  onComplete
 }: LiveTrainingCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,6 +44,8 @@ export default function LiveTrainingCamera({
   const detectorInstanceRef = useRef<any>(null);
   const animationIdRef = useRef<number | null>(null);
   const [librariesLoaded, setLibrariesLoaded] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const completionTriggeredRef = useRef(false);
 
   useEffect(() => {
     loadLibraries();
@@ -48,12 +54,17 @@ export default function LiveTrainingCamera({
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
+      completionTriggeredRef.current = false;
+      setIsComplete(false);
     };
   }, []);
 
   useEffect(() => {
     if (librariesLoaded) {
       initializeDetector();
+      completionTriggeredRef.current = false;
+      setIsComplete(false);
+      setReps(0);
     }
   }, [exerciseType, librariesLoaded]);
 
@@ -123,9 +134,21 @@ export default function LiveTrainingCamera({
           startDetection();
         };
       }
-    } catch (error) {
-      console.error('Camera access denied:', error);
-      setFeedback('Camera access denied. Please enable camera permissions.');
+    } catch (error: any) {
+      console.error('Camera access error:', error);
+
+      let errorMessage = 'Camera access denied. Please enable camera permissions.';
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in browser settings.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please check your device.';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'Camera is not supported in this browser.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = 'Camera does not meet the required specifications.';
+      }
+
+      setFeedback(errorMessage);
     }
   };
 

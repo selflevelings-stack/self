@@ -13,7 +13,6 @@ import NewAwakeningTest from './pages/NewAwakeningTest';
 import LockedRankReveal from './pages/LockedRankReveal';
 import UpgradePage from './pages/UpgradePage';
 import RankReveal from './pages/RankReveal';
-import HunterDashboard from './pages/HunterDashboard';
 import HunterDashboard2 from './pages/HunterDashboard2';
 import { useAuth } from './hooks/useAuth';
 import { useSubscription } from './hooks/useSubscription';
